@@ -15,7 +15,7 @@ class Vuelo:
         self.aerolinea = aerolinea
 
         if estado is None:
-            self.estado = EstadoVuelo("Programado")
+            self.estado = EstadoVuelo("PROG", "Programado")
         else:
             self.estado = estado
 
@@ -37,7 +37,7 @@ class Vuelo:
         return 50
 
     def consultarDisponibilidad(self):
-        asientos = self.getAsientosDisponibles()
+        asientos = self.getAsientoDisponibles()
         if asientos > 0:
             print(f"Hay {asientos} asientos disponibles en el vuelo {self.numeroVuelo}")
         else:

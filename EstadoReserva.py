@@ -12,6 +12,7 @@ class EstadoReserva:
         self.fechaCreacion = datetime.now()
         self.usuarioCreacion = usuarioCreacion
 
+    @classmethod
     def get_estado(cls, codigo: str) -> 'EstadoReserva':
         
         if codigo == "PEND":
@@ -45,6 +46,7 @@ class EstadoReserva:
     def requiereAccionUsuario(self) -> bool:
         return self.requiereConfirmacion
 
+    @staticmethod
     def getEstadosValidos() -> List:
         return [
             EstadoReserva.get_estado("Pendiente"),

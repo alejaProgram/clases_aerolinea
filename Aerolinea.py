@@ -1,6 +1,6 @@
 from typing import List
 from datetime import datetime
-from Avion import Avion
+from avion import Avion
 
 class Aerolinea:
     def __init__(self, nombre: str, codigo: str, paisOrigen: str, telefono: str, email: str):
@@ -29,5 +29,4 @@ class Aerolinea:
         return self.aviones
     
     def __str__(self):
-        return f"Aerolinea: {self.nombre} ({self.pais_origen}) - {len(self.aviones)} aviones"
-     
+        return f"Aerolinea: {self.nombre} ({self.paisOrigen}) - {len(self.aviones)} aviones"

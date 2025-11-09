@@ -20,7 +20,7 @@ class Pasajero:
     def calcularEdad(self):
         return self.edad
 
-    def consultarReservas(Self):
+    def consultarReservas(self):
         if not self.reservas:
             print(f"El pasajero {self.nombre} no tiene reservas")
         else:
@@ -29,9 +29,9 @@ class Pasajero:
     
     def cancelarReserva(self, codigo_reserva: str)-> bool:
         for reserva in self.reservas:
-            if reserva.codigoReserva == codigoReserva:
+            if reserva.codigoReserva == codigo_reserva:
                 reserva.cancelarReserva()
-                print(f"Reserva {codigoReserva} ha sido cancelada")
+                print(f"Reserva {codigo_reserva} ha sido cancelada")
                 return True
         print(f"Reserva no encontrada")
         return False
@@ -41,7 +41,7 @@ class Pasajero:
         print(f"Reserva {reserva.codigoReserva} agregada")
             
     def __str__(self):
-            return (f"Pasajero: {self.nombre}{self.apellido}(ID: {self.identificacion})"
+            return (f"Pasajero: {self.nombre} {self.apellido} (ID: {self.__identificacion})"
                     f"Edad:{self.edad} Nacionalidad: {self.nacionalidad}"
                     f"Telefono: {self.telefono} Email: {self.email}"
                     f" Total Reservas: {len(self.reservas)}")

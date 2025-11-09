@@ -1,5 +1,7 @@
 from avion import Avion
 from estado_avion import EstadoAvion
+import time
+import sys
 
 def mostrar_menu():
     print("\n--- Sistema de Gestión de Aviones ---")
@@ -11,6 +13,56 @@ def mostrar_menu():
     print("6. Realizar mantenimiento")
     print("7. Actualizar horas de vuelo")
     print("8. Salir")
+
+def convertir_hora_12_a_24(hora_str):
+    hora_str = hora_str.strip().upper()
+
+    if 'AM' not in hora_str and 'PM' not in hora_str:
+        return float(hora_str)
+    
+    if 'AM' in hora_str:
+        es_pm = False
+        hora_str = hora_str.replace('AM', '').strip()
+    else:
+        es_pm = True
+        hora_str = hora_str.replace('PM', '').strip()
+    
+    if ':' in hora_str:
+        partes = hora_str.split(':')
+        horas = int(partes[0])
+        minutos = int(partes[1])
+    else:
+        horas = int(hora_str)
+        minutos = 0
+    
+    if es_pm and horas != 12:
+        horas += 12
+    elif not es_pm and horas == 12:
+        horas = 0
+    
+    return horas + (minutos / 60.0)
+
+def animacion_cierre():
+    mensajes = [
+        "\n✈️  Cerrando sistema",
+        "✈️  Cerrando sistema.",
+        "✈️  Cerrando sistema..",
+        "✈️  Cerrando sistema...",
+    ]
+    
+    for mensaje in mensajes:
+        sys.stdout.write('\r' + mensaje)
+        sys.stdout.flush()
+        time.sleep(0.3)
+    
+    print("\n")
+    print("╔════════════════════════════════════════╗")
+    print("║                                        ║")
+    print("║     ¡Gracias por usar el sistema!     ║")
+    print("║          ¡Buen vuelo! ✈️               ║")
+    print("║                                        ║")
+    print("╚════════════════════════════════════════╝")
+    print()
 
 def main():
     avion = None
@@ -61,7 +113,7 @@ def main():
                 if not asiento.ocupado:
                     if asiento.reservarAsiento():
                         print(f"Asiento {num_asiento} reservado exitosamente.")
-                        print(f"Costo: ${asiento.tipo.calcularCosto()}")
+                        print(f"Costo: ${asiento.tipo.calcularCosto():,.0f} COP")
                 else:
                     print(f"El asiento {num_asiento} ya está ocupado.")
                     
@@ -107,14 +159,21 @@ def main():
                 continue
                 
             try:
-                horas = float(input("Ingrese las horas de vuelo a agregar: "))
+                print("\n--- Actualizar Horas de Vuelo ---")
+                print("Puede ingresar:")
+                print("  • Número decimal: 2.5, 3.75, etc.")
+                print("  • Formato 12 horas: 2:30 PM, 8:00 AM, etc.")
+                print("  • Solo horas: 3 PM, 10 AM, etc.")
+                
+                entrada = input("\nIngrese las horas de vuelo a agregar: ")
+                horas = convertir_hora_12_a_24(entrada)
                 avion.horasVuelo += horas
-                print(f"Horas de vuelo actualizadas: {avion.horasVuelo}")
-            except ValueError:
-                print("Error: Ingrese un número válido")
+                print(f"✓ Horas de vuelo actualizadas: {avion.horasVuelo:.2f} horas")
+            except ValueError as e:
+                print(f"✗ Error: Formato no válido. Ejemplos: '2.5', '3:30 PM', '8 AM'")
                 
         elif opcion == "8":
-            print("¡Hasta luego!")
+            animacion_cierre()
             break
             
         else:
