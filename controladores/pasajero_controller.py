@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from ..Pasajero import Pasajero
+from Pasajero import Pasajero
 
 # Lista para almacenar los pasajeros (simulando una base de datos)
 pasajeros = []

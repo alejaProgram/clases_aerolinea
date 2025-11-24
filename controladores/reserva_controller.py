@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
-from ..Reserva import Reserva
-from ..Pasajero import Pasajero
-from ..EstadoReserva import EstadoReserva
+from Reserva import Reserva
+from Pasajero import Pasajero
+from EstadoReserva import EstadoReserva
 
 # Lista para almacenar las reservas (simulando una base de datos)
 reservas = []
