@@ -1,21 +1,18 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime
+from datetime import datetime, timezone
 from Reserva import Reserva
-from Pasajero import Pasajero
 from EstadoReserva import EstadoReserva
 
-# Lista para almacenar las reservas (simulando una base de datos)
 reservas = []
 
-# Crear un Blueprint para las rutas de reservas
 reserva_bp = Blueprint('reserva', __name__)
 
-# Obtener todas las reservas
 @reserva_bp.route('/reservas', methods=['GET'])
 def obtener_reservas():
     return jsonify([{
         'codigo': r.codigoReserva,
-        'fecha': r.fechaReserva.isoformat(),
+        'fecha': r.fechaReserva.strftime('%d/%m/%Y'),
+        'fecha_iso': r.fechaReserva.isoformat(),
         'pasajero': r.pasajero,
         'vuelo': r.vuelo,
         'asiento': r.asiento,
@@ -23,7 +20,6 @@ def obtener_reservas():
         'estado': str(r.estado)
     } for r in reservas])
 
-# Obtener una reserva por código
 @reserva_bp.route('/reservas/<string:codigo>', methods=['GET'])
 def obtener_reserva(codigo):
     reserva = next((r for r in reservas if r.codigoReserva == codigo), None)
@@ -32,7 +28,8 @@ def obtener_reserva(codigo):
     
     return jsonify({
         'codigo': reserva.codigoReserva,
-        'fecha': reserva.fechaReserva.isoformat(),
+        'fecha': reserva.fechaReserva.strftime('%d/%m/%Y'),
+        'fecha_iso': reserva.fechaReserva.isoformat(),
         'pasajero': reserva.pasajero,
         'vuelo': reserva.vuelo,
         'asiento': reserva.asiento,
@@ -40,33 +37,39 @@ def obtener_reserva(codigo):
         'estado': str(reserva.estado)
     })
 
-# Crear una nueva reserva
 @reserva_bp.route('/reservas', methods=['POST'])
 def crear_reserva():
     datos = request.get_json()
     
-    # Validar campos requeridos
+
     campos_requeridos = ['codigo', 'fecha', 'id_pasajero', 'vuelo', 'asiento', 'precio']
     for campo in campos_requeridos:
         if campo not in datos:
             return jsonify({'error': f'Falta el campo requerido: {campo}'}), 400
     
-    # Verificar si el código de reserva ya existe
+
     if any(r.codigoReserva == datos['codigo'] for r in reservas):
         return jsonify({'error': 'Ya existe una reserva con este código'}), 409
     
-    # Buscar al pasajero (en una aplicación real, esto buscaría en la base de datos)
-    from ..controladores.pasajero_controller import pasajeros
-    pasajero = next((p for p in pasajeros if p._Pasajero__identificacion == datos['id_pasajero']), None)
+
+    if not isinstance(datos['id_pasajero'], str) or not datos['id_pasajero'].strip():
+        return jsonify({'error': 'ID de pasajero inválido'}), 400
     
-    if pasajero is None:
-        return jsonify({'error': 'Pasajero no encontrado'}), 404
-    
-    # Crear la nueva reserva
+
     try:
-        fecha_reserva = datetime.fromisoformat(datos['fecha'])
-    except ValueError:
+        fecha_reserva = datetime.fromisoformat(datos['fecha'].replace('Z', '+00:00'))
+        if fecha_reserva < datetime.now(timezone.utc):
+            return jsonify({'error': 'La fecha de reserva no puede ser en el pasado'}), 400
+    except (ValueError, TypeError):
         return jsonify({'error': 'Formato de fecha inválido. Use el formato ISO (YYYY-MM-DDTHH:MM:SS)'}), 400
+    
+
+    try:
+        precio = float(datos['precio'])
+        if precio <= 0:
+            return jsonify({'error': 'El precio debe ser mayor a cero'}), 400
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Precio inválido'}), 400
     
     nueva_reserva = Reserva(
         codigoReserva=datos['codigo'],
@@ -77,8 +80,12 @@ def crear_reserva():
         precioTotal=float(datos['precio'])
     )
     
-    # Asociar la reserva al pasajero
-    pasajero.agregarReserva(nueva_reserva)
+
+    if any(r.vuelo == datos['vuelo'] and r.asiento == datos['asiento'] 
+           for r in reservas if r.estado != EstadoReserva.get_estado("CANC")):
+        return jsonify({'error': 'El asiento ya está ocupado en este vuelo'}), 409
+    
+
     reservas.append(nueva_reserva)
     
     return jsonify({
@@ -86,7 +93,7 @@ def crear_reserva():
         'codigo': datos['codigo']
     }), 201
 
-# Actualizar estado de una reserva
+
 @reserva_bp.route('/reservas/<string:codigo>/estado', methods=['PUT'])
 def actualizar_estado_reserva(codigo):
     datos = request.get_json()
@@ -109,29 +116,75 @@ def actualizar_estado_reserva(codigo):
     else:
         return jsonify({'error': 'Acción no válida. Use "confirmar" o "cancelar"'}), 400
 
-# Asignar asiento a una reserva
+
 @reserva_bp.route('/reservas/<string:codigo>/asiento', methods=['PUT'])
 def asignar_asiento(codigo):
     datos = request.get_json()
     
-    if 'asiento' not in datos:
+
+    if not datos or 'asiento' not in datos:
         return jsonify({'error': 'Se debe especificar el número de asiento'}), 400
     
+    if not isinstance(datos['asiento'], str) or not datos['asiento'].strip():
+        return jsonify({'error': 'El número de asiento no es válido'}), 400
+    
+
     reserva = next((r for r in reservas if r.codigoReserva == codigo), None)
     if reserva is None:
         return jsonify({'error': 'Reserva no encontrada'}), 404
     
-    if reserva.asignarAsiento(datos['asiento']):
-        return jsonify({'mensaje': f'Asiento {datos["asiento"]} asignado exitosamente'})
-    else:
-        return jsonify({'error': 'No se pudo asignar el asiento'}), 400
 
-# Generar boleto de una reserva
+    if any(r.vuelo == reserva.vuelo and r.asiento == datos['asiento'] and r != reserva 
+           for r in reservas if r.estado != EstadoReserva.get_estado("CANC")):
+        return jsonify({'error': 'El asiento ya está ocupado en este vuelo'}), 409
+    
+
+    if hasattr(reserva, 'asignarAsiento') and callable(getattr(reserva, 'asignarAsiento')):
+        if reserva.asignarAsiento(datos['asiento']):
+            return jsonify({
+                'mensaje': f'Asiento {datos["asiento"]} asignado exitosamente',
+                'asiento': datos['asiento']
+            })
+    
+    return jsonify({'error': 'No se pudo asignar el asiento. Verifique el estado de la reserva.'}), 400
+
+
 @reserva_bp.route('/reservas/<string:codigo>/boleto', methods=['GET'])
 def generar_boleto(codigo):
     reserva = next((r for r in reservas if r.codigoReserva == codigo), None)
     if reserva is None:
         return jsonify({'error': 'Reserva no encontrada'}), 404
     
-    boleto = reserva.generarBoleto()
-    return jsonify({'boleto': boleto})
+
+    if reserva.estado != EstadoReserva.get_estado("CONF"):
+        return jsonify({'error': 'No se puede generar boleto para una reserva no confirmada'}), 400
+    
+
+    if not hasattr(reserva, 'generarBoleto') or not callable(getattr(reserva, 'generarBoleto')):
+        return jsonify({
+            'error': 'No se puede generar el boleto',
+            'detalle': 'La funcionalidad de generación de boletos no está disponible'
+        }), 501
+    
+    try:
+        boleto = reserva.generarBoleto()
+        if not boleto:
+            return jsonify({'error': 'No se pudo generar el boleto'}), 500
+            
+        return jsonify({
+            'mensaje': 'Boleto generado exitosamente',
+            'boleto': boleto,
+            'reserva': {
+                'codigo': reserva.codigoReserva,
+                'fecha': reserva.fechaReserva.strftime('%d/%m/%Y'),
+                'fecha_iso': reserva.fechaReserva.isoformat(),
+                'vuelo': reserva.vuelo,
+                'asiento': reserva.asiento,
+                'precioTotal': reserva.precioTotal
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'error': 'Error al generar el boleto',
+            'detalle': str(e)
+        }), 500
