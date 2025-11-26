@@ -17,13 +17,13 @@ class EstadoReserva:
         
         if codigo == "PEND":
             return EstadoReserva(
-                codigo="PEND", descripcion="Pendiente de Pago", esActivo=True, 
+                codigo="PEND", descripcion="Pendiente", esActivo=True, 
                 permiteModificacion=True, permiteCancelacion=True, 
                 requiereConfirmacion=False, usuarioCreacion="SYSTEM"
             )
         elif codigo == "CONF":
             return EstadoReserva(
-                codigo="CONF", descripcion="Confirmada/Emitida", esActivo=True, 
+                codigo="CONF", descripcion="Confirmada", esActivo=True, 
                 permiteModificacion=False, permiteCancelacion=True, 
                 requiereConfirmacion=False, usuarioCreacion="SYSTEM"
             )

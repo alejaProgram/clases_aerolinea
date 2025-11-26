@@ -35,7 +35,7 @@ def obtener_pasajero(id):
         'reservas': [{
             'codigo': r.codigoReserva,
             'vuelo': r.vuelo,
-            'estado': str(r.estado)
+            'estado': r.estado.codigo
         } for r in pasajero.reservas]
     })
 
