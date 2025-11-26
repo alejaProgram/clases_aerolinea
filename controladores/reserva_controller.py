@@ -34,7 +34,7 @@ def obtener_reserva(codigo):
         'vuelo': reserva.vuelo,
         'asiento': reserva.asiento,
         'precioTotal': reserva.precioTotal,
-        'estado': str(reserva.estado)
+        'estado': reserva.estado.codigo
     })
 
 @reserva_bp.route('/reservas', methods=['POST'])
@@ -109,10 +109,16 @@ def actualizar_estado_reserva(codigo):
     
     if accion == 'confirmar':
         reserva.confirmarReserva()
-        return jsonify({'mensaje': 'Reserva confirmada exitosamente'})
+        return jsonify({
+            'mensaje': 'Reserva confirmada exitosamente',
+            'estado': reserva.estado.codigo
+        })
     elif accion == 'cancelar':
         reserva.cancelarReserva()
-        return jsonify({'mensaje': 'Reserva cancelada exitosamente'})
+        return jsonify({
+            'mensaje': 'Reserva cancelada exitosamente',
+            'estado': reserva.estado.codigo
+        })
     else:
         return jsonify({'error': 'Acción no válida. Use "confirmar" o "cancelar"'}), 400
 
@@ -166,7 +172,7 @@ def generar_boleto(codigo):
             'detalle': 'La funcionalidad de generación de boletos no está disponible'
         }), 501
     
-    try:
+    try: 
         boleto = reserva.generarBoleto()
         if not boleto:
             return jsonify({'error': 'No se pudo generar el boleto'}), 500
